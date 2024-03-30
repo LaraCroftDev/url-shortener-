@@ -6,15 +6,14 @@ import (
 )
 
 const ( // move these to test later
-	localhost = "http://localhost:8181/test"
+	localhost = "http://localhost:8181/hello"
 )
 
 func main() {
-	l := &Url{
-		OrigUrl: localhost,
+	l := URL{
+		origin: localhost,
 	}
-	http.HandleFunc("/test", l.handler)
+	http.HandleFunc("/", l.handler)
 	fmt.Println("URL Shortener is running on :8181")
 	http.ListenAndServe(":8181", nil)
-
 }

@@ -1,118 +1,99 @@
 package main
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-	"log"
-	"math/rand"
 	"net/http"
-	"net/url"
 	"time"
-
-	_ "github.com/lib/pq"
 )
 
 const (
-	dbdriver  = "postgres"
-	host      = "localhost"
-	port      = 5432
-	user      = "postgres"
-	password  = "irfan"
-	dbname    = "urlshortener"
-	tablename = "urls"
 	charset   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	keyLength = 6
 )
 
-type Url struct {
-	OrigUrl  string
-	ShortUrl string
-	Expiry   time.Time
+type URL struct {
+	origin string
+	short  string
+	expiry time.Time
 }
 
-func (u *Url) handler(w http.ResponseWriter, r *http.Request) {
-	if u.OrigUrl == "" {
-		log.Fatalln(errors.New("Empty input url."))
-		return
-	}
+func (u *URL) handler(w http.ResponseWriter, r *http.Request) {
+	// 	if u.origin == "" {
+	// 		http.Error(w, "Empty input URL", http.StatusBadRequest)
+	// 		return
+	// 	}
 
-	res, err := validateUrl(u.OrigUrl)
-	if err != nil {
-		log.Fatalln(err)
-		return
-	}
+	// 	res, err := validateUrl(u.origin)
+	// 	if err != nil {
+	// 		http.Error(w, "Invalid URL", http.StatusBadRequest)
+	// 		return
+	// 	}
 
-	db, err := sql.Open(dbdriver, dbInfo())
-	if err != nil {
-		log.Fatalln(err)
-		return
-	}
+	// 	// db, err := sql.Open(dbdriver, dbInfo())
+	// 	// if err != nil {
+	// 	// 	http.Error(w, "Database connection failure: "+err.Error(), http.StatusInternalServerError)
+	// 	// 	return
+	// 	// }
 
-	defer db.Close()
+	// 	// defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		log.Fatalln(err)
-		return
-	}
+	// 	// if err := db.Ping(); err != nil {
+	// 	// 	http.Error(w, "Database connection interruption: "+err.Error(), http.StatusInternalServerError)
+	// 	// 	return
+	// 	// }
 
-	row := Url{}
-	err = db.QueryRow("SELECT * FROM "+tablename+" WHERE origurl LIKE '"+u.OrigUrl+"';").Scan(&row.OrigUrl, &row.ShortUrl, &row.Expiry)
-	if err != nil {
-		if err != sql.ErrNoRows {
-			log.Fatalln(err)
-			return
-		}
+	// 	// var row URL
+	// 	// err = db.QueryRow("SELECT origin, short, expiry FROM "+tablename+" WHERE origin = '"+u.origin+"';").Scan(&row.origin, &row.short, &row.expiry)
+	// 	if err != nil {
+	// 		if !errors.Is(err, sql.ErrNoRows) {
+	// 			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+	// 			return
+	// 		}
 
-		u.ShortUrl = generateShortUrl(res)
-		u.Expiry = time.Now()
-		k, err := db.Exec("INSERT INTO " + tablename + " (origurl, shorturl, expiry) VALUES ('" + u.OrigUrl + "', '" + u.ShortUrl + "', CURRENT_TIMESTAMP);")
-		if err != nil {
-			log.Fatalln(err)
-			return
-		}
-		m, err := k.RowsAffected()
-		if err != nil || m != int64(1) {
-			log.Fatalln(err)
-			return
-		}
-	}
-
-	if timeExpired(row.Expiry) {
-		u.ShortUrl = generateShortUrl(res)
-		u.Expiry = time.Now()
-		_, err := db.Exec("UPDATE " + tablename + " SET shorturl = '" + u.ShortUrl + "', " + " expiry = CURRENT_TIMESTAMP;")
-		if err != nil {
-			log.Fatalln(err)
-			return
-		}
-	} else {
-		u.Expiry = row.Expiry
-		u.ShortUrl = row.ShortUrl
-	}
-	http.Redirect(w, r, u.ShortUrl, http.StatusSeeOther)
+	// 		u.short = generateShortUrl(res)
+	// 		u.expiry = time.Now()
+	// 		k, err := db.Exec("INSERT INTO " + tableName + " (origin, short, expiry) VALUES ('" + u.origin + "', '" + u.short + "', CURRENT_TIMESTAMP);")
+	// 		if err != nil {
+	// 			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+	// 			return
+	// 		}
+	// 		m, err := k.RowsAffected()
+	// 		if err != nil || m != int64(1) {
+	// 			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+	// 			return
+	// 		}
 }
 
-func generateShortUrl(u *url.URL) string {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	shortKey := make([]byte, keyLength)
-	for i := range shortKey {
-		shortKey[i] = charset[rand.Intn(len(charset))]
-	}
-	return u.Scheme + "://" + u.Host + "/" + string(shortKey)
-}
+// 	if timeExpired(row.expiry) {
+// 		u.short = generateShortUrl(res)
+// 		u.expiry = time.Now()
+// 		_, err := db.Exec("UPDATE " + tableName + " SET short = '" + u.short + "', " + " expiry = CURRENT_TIMESTAMP;")
+// 		if err != nil {
+// 			http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+// 			return
+// 		}
+// 	} else {
+// 		u.expiry = row.expiry
+// 		u.short = row.short
+// 	}
+// 	http.Redirect(w, r, u.origin, http.StatusSeeOther)
+// }
 
-func validateUrl(inputUrl string) (*url.URL, error) {
-	return url.ParseRequestURI(inputUrl)
-}
+// func generateShortUrl(u *url.URL) string {
+// 	rand.New(rand.NewSource(time.Now().UnixNano()))
+// 	shortKey := make([]byte, keyLength)
+// 	for i := range shortKey {
+// 		shortKey[i] = charset[rand.Intn(len(charset))]
+// 	}
+// 	return u.Scheme + "://" + u.Host + "/" + string(shortKey)
+// }
 
-func dbInfo() string {
-	return fmt.Sprintf("host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-}
+// func validateUrl(inputUrl string) (*url.URL, error) {
+// 	return url.ParseRequestURI(inputUrl)
+// }
 
-func timeExpired(expiry time.Time) bool {
-	if (time.Now()).Sub(expiry) < (time.Hour * 5) {
-		return false
-	}
-	return true
-}
+// func timeExpired(expiry time.Time) bool {
+// 	if (time.Now()).Sub(expiry) < (time.Hour * 5) {
+// 		return false
+// 	}
+// 	return true
+// }
