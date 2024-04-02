@@ -32,6 +32,7 @@ func dbConnect() *sql.DB {
 	return db
 }
 
+// Every shortened url would be expired within 24 hours after it is generated
 func insertUrl(origin, short string) error {
 	db := dbConnect()
 	defer db.Close()
@@ -42,10 +43,10 @@ func insertUrl(origin, short string) error {
 }
 
 func getUrl(short string) (URL, error) {
-	var row URL
 	db := dbConnect()
-	err := db.QueryRow("SELECT origin, short, expiry FROM "+tableName+" WHERE short = '"+short+"';").Scan(&row.origin, &row.short, &row.expiry)
-	db.Close()
+	defer db.Close()
+	var row URL
+	err := db.QueryRow("SELECT origin, short, expiry FROM "+tableName+" WHERE short = '"+short+"';").Scan(&row.Origin, &row.Short, &row.Expiry)
 	return row, err
 }
 
