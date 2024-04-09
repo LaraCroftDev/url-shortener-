@@ -1,7 +1,12 @@
 package main
 
-var NewUrl string = "https://github.com"
+import (
+	"fmt"
+	"net/http"
+)
 
 func main() {
-	redirectTo(NewUrl)
+	r := Router()
+	fmt.Println("URL Shortener is running on :8181")
+	http.ListenAndServe(":8181", r)
 }
