@@ -36,10 +36,14 @@ func dbConnect() *sql.DB {
 func insertUrl(origin, short string) error {
 	db := dbConnect()
 	defer db.Close()
-	if _, err := db.Exec("INSERT INTO " + tableName + " (origin, short, expiry) VALUES ('" + origin + "', '" + short + "', CURRENT_TIMESTAMP + INTERVAL '24 HOUR');"); err != nil {
+	stmt, err := db.Prepare("INSERT INTO " + tableName + " (origin, short, expiry) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '24 HOUR')")
+	if err != nil {
 		return err
 	}
-	return nil
+	defer stmt.Close()
+
+	_, err = stmt.Exec(origin, short)
+	return err
 }
 
 func getUrl(short string) (URL, error) {
